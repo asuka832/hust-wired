@@ -1,7 +1,7 @@
 <h1 align="center">HUST Wired</h1>
 
 <p align="center">
-Plug in the cable. Sign in to the campus wired network.
+  Plug in the cable. Automatically sign in to the HUST campus wired network.
 </p>
 
 <p align="center">
@@ -18,87 +18,117 @@ Plug in the cable. Sign in to the campus wired network.
 
 ---
 
-A Windows command-line tool for the HUST campus wired network on Ruijie ePortal. It checks whether authentication is required, and submits a login only when the portal page is waiting.
+A Rust command-line tool for the Huazhong University of Science and Technology (HUST) campus wired network on Ruijie ePortal. It probes connectivity concurrently and submits a login only when the captive portal is waiting.
 
-> Unofficial. Use your own campus account. Do not post your account, password, or full login URL in an issue.
+> [!NOTE]
+> Unofficial tool. Use your own campus account. Never post your account, password, or full login URL in chats or GitHub issues.
 
 ## Features
 
-- Run it from the release archive. Rust is not required.
-- A numbered menu that wraps when the terminal is narrow.
-- A watch loop that signs in again after a drop. Press `Q` to leave it.
-- Optional sign-in check after Windows starts.
-- The password stays on this PC, protected with Windows DPAPI. The program does not read browser passwords.
+- **Ready to run**: Single Rust binary—download and extract without installing Rust or Python.
+- **Adaptive menu**: Streamlined first-run setup; the numbered menu automatically adapts to narrow terminals.
+- **Auto-reconnect watch**: Periodically checks connectivity and signs back in after a drop. Press `Q` anytime to stop.
+- **Windows startup**: Optional per-user startup entry (`HKCU\...\Run`) to monitor and authenticate in the background after Windows sign-in.
+- **Local encryption**: Passwords are encrypted with Windows DPAPI under your user profile. The tool never reads browser passwords.
 
-## Download
+## Quick Start
 
-Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka832/hust-wired/releases/latest) and double-click `hust.cmd`.
+Download `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka832/hust-wired/releases/latest), extract it, and double-click `hust.cmd`.
 
-1. On first launch, choose `1` and enter your campus account and password. The tool saves them, checks the network, and attempts to sign in if needed.
-2. Choose `5` from the main menu to start automatically at Windows sign-in. If your account needs an operator code, press `M` for more settings, then choose `4`.
-3. If the tool cannot get the login parameters, paste the entire address from the browser bar. Use the page before login succeeds. Press Enter to cancel. A bad URL does not replace a saved one.
+1. **First launch**: Choose `1` to save your campus account and password. The tool immediately checks the network and signs in if needed.
+2. **Start with Windows**: Choose `5` from the main menu to enable automatic sign-in at Windows startup. If your account requires an operator code, press `M` for more settings and choose `4`.
+3. **Manual login URL (only if prompted)**: If the tool cannot obtain portal parameters automatically, paste the entire address from your browser bar—**use the page before login succeeds**. Press Enter to cancel; an invalid URL will not overwrite your saved configuration.
 
-## Menu
+## Interactive Menu
 
-- Main menu: `1` sign in, `2` check the network, `5` start at Windows sign-in, `M` more settings, `0` exit.
-- More settings: `3` show portal field names, `4` update the account, `6` disable startup, `7` watch in this window, `8` remove local data, `9` update the login URL, `0` go back. Removing data requires a `y` confirmation.
+### Main Menu
 
-`2` and `7` print “正在检测中” immediately. One check waits at most about 3 seconds and reports the latency. During a watch, press **Q** to return to the menu. A standalone `watch` command exits on Q.
+| Key | Action | Description |
+| --- | --- | --- |
+| `1` | Sign in now | Check the network and submit login if authentication is required |
+| `2` | Check network | Probe connectivity concurrently and report latency (~3 s max, press `Q` to cancel) |
+| `5` | Enable startup | Register Windows per-user startup to watch in the background |
+| `M` | More settings | Open diagnostics, watch mode, account settings, and cleanup options |
+| `0` | Exit | Exit the program |
+
+### More Settings
+
+| Key | Action | Description |
+| --- | --- | --- |
+| `3` | Diagnose parameters | Check network and print portal query field names (values are never printed) |
+| `4` | Set account | Update campus account, password, and optional operator code |
+| `6` | Disable startup | Remove the Windows startup entry |
+| `7` | Watch in window | Check every 20 s and auto-reconnect in this window; press `Q` to return to menu |
+| `8` | Remove local data | Clear startup entry, account, log, and saved login URL (`y` confirmation required) |
+| `9` | Update login URL | Manually paste and save the full portal login URL |
+| `0` | Back | Return to the main menu |
+
+## CLI Usage
+
+You can also invoke subcommands directly without entering the menu:
 
 ```powershell
-.\hust-wireless-rs.exe login
-.\hust-wireless-rs.exe status
-.\hust-wireless-rs.exe watch
-.\hust-wireless-rs.exe install
-.\hust-wireless-rs.exe uninstall
-.\hust-wireless-rs.exe set-url
-.\hust-wireless-rs.exe remove
+.\hust-wireless-rs.exe setup       # Configure account, password, and operator code
+.\hust-wireless-rs.exe login       # Sign in once if needed
+.\hust-wireless-rs.exe status      # Check network state and latency
+.\hust-wireless-rs.exe diagnose    # Print portal parameter field names
+.\hust-wireless-rs.exe watch       # Watch and auto-reconnect (press Q to exit)
+.\hust-wireless-rs.exe install     # Enable Windows startup
+.\hust-wireless-rs.exe uninstall   # Disable Windows startup only
+.\hust-wireless-rs.exe set-url     # Save the full portal login URL
+.\hust-wireless-rs.exe remove      # Clear startup, account, log, and URL (keeps binaries)
 ```
 
-`uninstall` only removes the startup entry. `remove` clears startup, the account, the log, and the saved login URL. It leaves the program files in place.
+> `uninstall` only removes the startup entry. `remove` clears all local data while leaving the program files intact—delete the extracted folder afterward to uninstall completely.
 
-## When login fails
+## Troubleshooting
 
-Choose `3` under more settings. A normal portal redirect carries fields such as `nasip` and `wlanuserip`. The diagnosis prints names, not values.
+- **Missing parameters / stopped working later**: Choose `3` under more settings to inspect field names (a normal redirect includes fields such as `nasip` and `wlanuserip`). If your network or device address changed, choose `9` and paste the full portal URL from your browser bar.
+- **Captcha or unregistered device**: Complete the prompt in a web browser first, then return to the tool.
+- **Watch stopped automatically**: After 5 consecutive authentication failures, watch mode backs off and stops to avoid repeatedly submitting invalid credentials. Verify your account or login URL before restarting.
 
-If it used to work and then stopped, the address has usually changed. Choose `9` and paste the entire address from the browser bar. A captcha or an unregistered-device message has to be handled in the browser before another login. The watch stops after five failed sign-ins in a row.
+## Local Data
 
-## Local data
+All local settings and logs are stored under your Windows user profile:
 
 ```text
 %APPDATA%\hust-wireless-cli\
-├── config.json          # account, password stored with DPAPI
-├── wired-login-url.txt  # login URL, plain text
-└── hust-auth.log        # watch log
+├── config.json          # account & operator code, password encrypted with DPAPI
+├── wired-login-url.txt  # saved portal login URL (plain text)
+└── hust-auth.log        # watch & authentication log
 ```
 
-## Build from source
+## Build from Source
 
-Rust stable is required.
+Rust stable is required:
 
 ```powershell
 cd .\hust-wireless-rs
 cargo build --release
 ```
 
-Without the Visual Studio C++ linker:
+Without the Visual Studio C++ linker, use the GNU target (requires a 64-bit MinGW `bin` directory on `PATH`):
 
 ```powershell
+cd .\hust-wireless-rs
 cargo +stable-x86_64-pc-windows-gnu build --release
 ```
 
-The GNU target needs a 64-bit MinGW `bin` directory on `PATH`. Run `target\release\hust-wireless-rs.exe`, or double-click `hust.cmd`.
+After building, run `target\release\hust-wireless-rs.exe` or double-click `hust-wireless-rs\hust.cmd`.
+
+Run unit tests:
 
 ```powershell
+cd .\hust-wireless-rs
 cargo test
 ```
 
-## Notes
+## Technical & Security Notes
 
-- The campus portal is HTTP, and the RSA public key comes over the same path. That is not HTTPS.
-- DPAPI protects the password on disk. Another program running as the same Windows user can still decrypt it. The login URL contains device and session parameters.
-- Connectivity probes use Xiaomi and Huawei `generate_204` endpoints, plus the campus portal and `123.123.123.123`.
-- Startup with Windows is available on Windows only.
+- **HTTP portal**: The campus portal runs over plain HTTP, and the RSA public key is fetched over the same link; this is not equivalent to HTTPS. If the portal disables password encryption, the tool refuses to send a plaintext password and aborts.
+- **Local storage**: DPAPI protects the password at rest on disk, though other processes running under the same Windows user can still decrypt it. `wired-login-url.txt` contains device and session parameters—do not share it.
+- **Connectivity probes**: Probes Xiaomi and Huawei `generate_204` endpoints, `123.123.123.123`, and the campus portal `index.jsp` concurrently, timing out after ~3 seconds.
+- **Platform support**: Windows startup integration is supported on Windows only.
 
 ## License
 
