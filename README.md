@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/asuka832/hust-wireless/releases"><img alt="release" src="https://img.shields.io/github/v/release/asuka832/hust-wireless?style=flat-square&color=3b82f6"></a>
+  <a href="https://github.com/asuka832/hust-wired/releases"><img alt="release" src="https://img.shields.io/github/v/release/asuka832/hust-wired?style=flat-square&color=3b82f6"></a>
   <img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows&logoColor=white">
   <img alt="Rust" src="https://img.shields.io/badge/Rust-1.96+-DEA584?style=flat-square&logo=rust&logoColor=white">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square"></a>
@@ -32,7 +32,7 @@ Windows 命令行工具，面向使用锐捷 ePortal 的华科校园有线网。
 
 ## 下载使用
 
-到 [Releases](https://github.com/asuka832/hust-wireless/releases/latest) 下载 `hust-wireless-rs-windows-x64.zip`，解压后双击 `hust.cmd`。
+到 [Releases](https://github.com/asuka832/hust-wired/releases/latest) 下载 `hust-wireless-rs-windows-x64.zip`，解压后双击 `hust.cmd`。
 
 1. 首次启动选 `1`「设置账号并连接」，输入校园网账号和密码。保存后会立即检测网络，需要认证时会尝试登录。
 2. 想在登录 Windows 后自动认证，在主菜单选 `5`。需要填写运营商代码时，按 `M` 进入更多设置，再选 `4`。

@@ -5,7 +5,7 @@ Plug in the cable. Sign in to the campus wired network.
 </p>
 
 <p align="center">
-  <a href="https://github.com/asuka832/hust-wireless/releases"><img alt="release" src="https://img.shields.io/github/v/release/asuka832/hust-wireless?style=flat-square&color=3b82f6"></a>
+  <a href="https://github.com/asuka832/hust-wired/releases"><img alt="release" src="https://img.shields.io/github/v/release/asuka832/hust-wired?style=flat-square&color=3b82f6"></a>
   <img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows&logoColor=white">
   <img alt="Rust" src="https://img.shields.io/badge/Rust-1.96+-DEA584?style=flat-square&logo=rust&logoColor=white">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square"></a>
@@ -32,7 +32,7 @@ A Windows command-line tool for the HUST campus wired network on Ruijie ePortal.
 
 ## Download
 
-Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka832/hust-wireless/releases/latest) and double-click `hust.cmd`.
+Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka832/hust-wired/releases/latest) and double-click `hust.cmd`.
 
 1. On first launch, choose `1` and enter your campus account and password. The tool saves them, checks the network, and attempts to sign in if needed.
 2. Choose `5` from the main menu to start automatically at Windows sign-in. If your account needs an operator code, press `M` for more settings, then choose `4`.
