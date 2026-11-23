@@ -396,7 +396,7 @@ pub fn login_once(portal: &Portal, credentials: &crate::config::Credentials) -> 
                 && login_url::save_login_url(&url, &portal.base_url).is_err()
             {
                 return Ok(
-                    "认证服务器已接受登录，但本地地址保存失败；可通过菜单 9 重新保存".to_string(),
+                    "认证服务器已接受登录，但本地地址保存失败；可用 set-url 重新保存".to_string(),
                 );
             }
         }

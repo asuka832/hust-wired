@@ -34,25 +34,14 @@ A Windows command-line tool for the HUST campus wired network on Ruijie ePortal.
 
 Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka832/hust-wireless/releases/latest) and double-click `hust.cmd`.
 
-1. Choose `4` and enter your campus account and password. The operator code is usually left empty.
-2. Choose `1` to sign in. The tool fetches the portal parameters itself.
-3. If that fails, choose `9` and paste the full `index.jsp?` URL from the page that shows the green Login button. A success page (`success.jsp?userIndex=...`) is rejected. Press Enter to cancel. A bad URL does not replace a saved one.
-4. Choose `5` if it should run after you sign in to Windows.
+1. On first launch, choose `1` and enter your campus account and password. The tool saves them, checks the network, and attempts to sign in if needed.
+2. Choose `5` from the main menu to start automatically at Windows sign-in. If your account needs an operator code, press `M` for more settings, then choose `4`.
+3. If the tool cannot fetch the portal parameters, it prompts for the full `index.jsp?` URL from the page with the green Login button. Press Enter to cancel. A bad URL does not replace a saved one.
 
 ## Menu
 
-| Key | Action |
-| --- | --- |
-| `1` | Sign in now |
-| `2` | Check the network |
-| `3` | Show portal field names only |
-| `4` | Save the account |
-| `5` | Start at Windows sign-in |
-| `6` | Stop starting with Windows |
-| `7` | Watch in this window |
-| `8` | Remove local data, after a `y` confirmation |
-| `9` | Update the login URL |
-| `0` | Exit |
+- Main menu: `1` sign in, `2` check the network, `5` start at Windows sign-in, `M` more settings, `0` exit.
+- More settings: `3` show portal field names, `4` update the account, `6` disable startup, `7` watch in this window, `8` remove local data, `9` update the login URL, `0` go back. Removing data requires a `y` confirmation.
 
 `2` and `7` print “正在检测中” immediately. One check waits at most about 3 seconds and reports the latency. During a watch, press **Q** to return to the menu. A standalone `watch` command exits on Q.
 
@@ -70,7 +59,7 @@ Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka8
 
 ## When login fails
 
-Choose `3` first. A normal portal redirect carries fields such as `nasip` and `wlanuserip`. The diagnosis prints names, not values.
+Choose `3` under more settings. A normal portal redirect carries fields such as `nasip` and `wlanuserip`. The diagnosis prints names, not values.
 
 If it used to work and then stopped, the address has usually changed. Choose `9` and paste the current `index.jsp?` URL. A captcha or an unregistered-device message has to be handled in the browser before another login. The watch stops after five failed sign-ins in a row.
 

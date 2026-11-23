@@ -247,11 +247,11 @@ def load_login_query(portal_base: str) -> str:
         try:
             query = parse_login_url(url, portal_base)
         except PortalError as exc:
-            raise LoginUrlRequired("未取得认证参数：本地登录地址无效；请选择菜单 9 更新登录地址") from exc
+            raise LoginUrlRequired("未取得认证参数：本地登录地址无效；可用 set-url 更新") from exc
         if path != login_url_path():
             save_login_url(url, portal_base)
         return query
-    raise LoginUrlRequired("未取得认证参数；请打开菜单 9 粘贴自己的 index.jsp 登录页地址")
+    raise LoginUrlRequired("未取得认证参数；可用 set-url 保存自己的 index.jsp 登录页地址")
 
 
 def prompt_login_url(portal_base: str) -> bool:
@@ -313,7 +313,7 @@ def load_credentials() -> tuple[str, str, str]:
         password = _dpapi(base64.b64decode(data["password_dpapi"]), False).decode("utf-8")
         return data["username"], password, data.get("service", "")
     except FileNotFoundError as exc:
-        raise PortalError("尚未设置账号，请先选择菜单 4 设置账号") from exc
+        raise PortalError("尚未设置账号，请从主菜单开始设置，或运行 setup") from exc
     except (KeyError, ValueError, UnicodeError) as exc:
         raise PortalError("账号配置已损坏，请重新运行 setup") from exc
 
@@ -388,7 +388,7 @@ def login_once(portal: Portal, credentials: tuple[str, str, str]) -> str:
             try:
                 save_login_url(url, portal.base_url)
             except OSError:
-                return "认证服务器已接受登录，但本地地址保存失败；可通过菜单 9 重新保存"
+                return "认证服务器已接受登录，但本地地址保存失败；可用 set-url 重新保存"
     return "认证服务器已接受登录"
 
 
@@ -465,9 +465,15 @@ def terminal_width(value: str) -> int:
     return sum(2 if unicodedata.east_asian_width(char) in ("F", "W") else 1 for char in value)
 
 
-def menu_lines(width: int) -> list[str]:
-    items = [f"[{number}] {label}" for number, (_, label) in MENU_OPTIONS.items()]
-    items.append("[0] 退出")
+MAIN_OPTIONS = {"1", "2", "5"}
+
+
+def menu_lines(width: int, more: bool) -> list[str]:
+    items = [f"[{number}] {label}" for number, (_, label) in MENU_OPTIONS.items()
+             if (number not in MAIN_OPTIONS) == more]
+    if not more:
+        items.append("[M] 更多设置")
+    items.append("[0] 返回" if more else "[0] 退出")
     cell_width = max(terminal_width(item) for item in items) + 4
     columns = min(3, max(1, width // cell_width))
     lines = []
@@ -489,30 +495,59 @@ def confirm_action(label: str) -> bool:
 
 
 def run_menu() -> int:
+    more = False
     while True:
-        print("\n华科有线网认证")
+        first_run = not config_path().exists()
+        if first_run:
+            more = False
+            print("\n华科有线网认证\n  [1] 设置账号并连接\n  [0] 退出")
+        else:
+            print("\n更多设置" if more else "\n华科有线网认证")
+            try:
+                width = os.get_terminal_size().columns
+            except OSError:
+                width = 80
+            print("\n".join(menu_lines(width, more)))
         try:
-            width = os.get_terminal_size().columns
-        except OSError:
-            width = 80
-        print("\n".join(menu_lines(width)))
-        print("持续监测时按 Ctrl+C 返回菜单。")
-        try:
-            choice = input("请选择数字：").strip()
+            choice = input("请输入选项：").strip()
         except (EOFError, KeyboardInterrupt):
             print("\n已退出。")
             return 0
         if choice == "0":
+            if more:
+                more = False
+                continue
             return 0
-        option = MENU_OPTIONS.get(choice)
-        if option is None:
-            print("无效选项，请输入菜单中的数字。")
+        if not first_run and not more and choice.lower() == "m":
+            more = True
             continue
-        command, _ = option
         try:
-            main([command], interactive=True)
+            if first_run and choice == "1":
+                setup(ask_service=False)
+                main(["login"], interactive=True)
+            elif not first_run and choice in MENU_OPTIONS and ((choice not in MAIN_OPTIONS) == more):
+                main([MENU_OPTIONS[choice][0]], interactive=True)
+            else:
+                print("无效选项，请输入菜单中显示的按键。")
         except (EOFError, KeyboardInterrupt):
             print("\n已停止当前操作，返回菜单。")
+        except (PortalError, OSError) as exc:
+            print(f"错误：{exc}", file=sys.stderr)
+
+
+def setup(*, ask_service: bool) -> None:
+    import getpass
+
+    print("认证服务器使用 HTTP，公钥来源无法验证。")
+    username = input("校园网账号：").strip()
+    if not username:
+        raise PortalError("账号不能为空")
+    password = getpass.getpass("校园网密码：")
+    if not password:
+        raise PortalError("密码不能为空")
+    service = input("运营商代码（通常直接回车）：").strip() if ask_service else ""
+    save_credentials(username, password, service)
+    print("已保存账号。")
 
 
 def main(argv: list[str] | None = None, *, interactive: bool | None = None) -> int:
@@ -527,18 +562,7 @@ def main(argv: list[str] | None = None, *, interactive: bool | None = None) -> i
         interactive = sys.stdin is not None and sys.stdin.isatty()
     try:
         if args.command == "setup":
-            print("安全提示：认证服务器使用 HTTP，无法验证公钥来源；请先阅读 README 的安全与已知限制。")
-            username = input("校园网账号：").strip()
-            if not username:
-                raise PortalError("账号不能为空")
-            import getpass
-
-            password = getpass.getpass("校园网密码：")
-            if not password:
-                raise PortalError("密码不能为空")
-            service = input("运营商代码（通常直接回车）：").strip()
-            save_credentials(username, password, service)
-            print("已保存账号。需要开机自动认证时，请选择 5 启用开机自启。")
+            setup(ask_service=True)
         elif args.command == "install":
             install_autostart()
             print("已设置登录 Windows 后自动监测。")
@@ -578,6 +602,8 @@ def main(argv: list[str] | None = None, *, interactive: bool | None = None) -> i
                     login = login_with_guidance if interactive else login_once
                     print(login(portal, credentials))
                 else:
+                    if interactive:
+                        print("持续监测已开始，按 Ctrl+C 结束。")
                     watch(portal, credentials)
         return 0
     except (EOFError, KeyboardInterrupt):
@@ -586,7 +612,7 @@ def main(argv: list[str] | None = None, *, interactive: bool | None = None) -> i
     except (PortalError, OSError) as exc:
         print(f"错误：{exc}", file=sys.stderr)
         if args.command == "login" and str(exc).startswith("认证失败"):
-            print("若设备或网络地址已变化，请选择菜单 9 更新登录地址后再试；也请检查账号密码。", file=sys.stderr)
+            print("请检查账号密码。若设备或网络地址已变化，可用 set-url 更新登录地址。", file=sys.stderr)
         return 1
 
 

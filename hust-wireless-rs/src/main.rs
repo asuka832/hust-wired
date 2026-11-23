@@ -36,9 +36,7 @@ fn main() {
             eprintln!("错误：{message}");
             if args.first().is_some_and(|value| value == "login") && message.starts_with("认证失败")
             {
-                eprintln!(
-                    "若设备或网络地址已变化，请选择菜单 9 更新登录地址后再试；也请检查账号密码。"
-                );
+                eprintln!("请检查账号密码。若设备或网络地址已变化，可用 set-url 更新登录地址。");
             }
             1
         }
@@ -87,7 +85,7 @@ fn print_help() {
 fn run_command(command: &str, interactive: Option<bool>) -> Result<()> {
     let interactive = interactive.unwrap_or_else(|| io::stdin().is_terminal());
     match command {
-        "setup" => setup(),
+        "setup" => setup(true),
         "install" => {
             autostart::install()?;
             println!("已设置登录 Windows 后自动监测。");
@@ -127,11 +125,27 @@ fn run_command(command: &str, interactive: Option<bool>) -> Result<()> {
 }
 
 fn run_menu() -> Result<()> {
+    let mut more = false;
     loop {
-        println!("\n华科有线网认证");
-        println!("{}", menu::menu_lines(menu::terminal_width()).join("\n"));
-        println!("持续监测时按 Q 返回菜单。");
-        let choice = match read_line_optional("请选择数字：")? {
+        let first_run = !config::config_path().try_exists()?;
+        if first_run {
+            more = false;
+            println!("\n华科有线网认证\n  [1] 设置账号并连接\n  [0] 退出");
+        } else {
+            println!(
+                "\n{}",
+                if more {
+                    "更多设置"
+                } else {
+                    "华科有线网认证"
+                }
+            );
+            println!(
+                "{}",
+                menu::menu_lines(menu::terminal_width(), more).join("\n")
+            );
+        }
+        let choice = match read_line_optional("请输入选项：")? {
             Some(choice) => choice,
             None => {
                 println!("\n已退出。");
@@ -140,13 +154,28 @@ fn run_menu() -> Result<()> {
         };
         let choice = choice.trim();
         if choice == "0" {
+            if more {
+                more = false;
+                continue;
+            }
             return Ok(());
         }
-        let Some(command) = menu::find_option(choice) else {
-            println!("无效选项，请输入菜单中的数字。");
+        if !first_run && !more && choice.eq_ignore_ascii_case("m") {
+            more = true;
+            continue;
+        }
+        let result = if first_run && choice == "1" {
+            setup(false).and_then(|()| run_command("login", Some(true)))
+        } else if !first_run
+            && menu::is_main_option(choice) != more
+            && let Some(command) = menu::find_option(choice)
+        {
+            run_command(command, Some(true))
+        } else {
+            println!("无效选项，请输入菜单中显示的按键。");
             continue;
         };
-        match run_command(command, Some(true)) {
+        match result {
             Ok(()) => {}
             Err(AppError::Cancelled) => {
                 watch::clear_stop();
@@ -157,8 +186,8 @@ fn run_menu() -> Result<()> {
     }
 }
 
-fn setup() -> Result<()> {
-    println!("安全提示：认证服务器使用 HTTP，无法验证公钥来源；请先阅读 README 的安全与已知限制。");
+fn setup(ask_service: bool) -> Result<()> {
+    println!("认证服务器使用 HTTP，公钥来源无法验证。");
     let username = read_line("校园网账号：")?.trim().to_string();
     if username.is_empty() {
         return Err(AppError::msg("账号不能为空"));
@@ -167,11 +196,15 @@ fn setup() -> Result<()> {
     if password.is_empty() {
         return Err(AppError::msg("密码不能为空"));
     }
-    let service = read_line("运营商代码（通常直接回车）：")?
-        .trim()
-        .to_string();
+    let service = if ask_service {
+        read_line("运营商代码（通常直接回车）：")?
+            .trim()
+            .to_string()
+    } else {
+        String::new()
+    };
     config::save_credentials(&username, &password, &service)?;
-    println!("已保存账号。需要开机自动认证时，请选择 5 启用开机自启。");
+    println!("已保存账号。");
     Ok(())
 }
 

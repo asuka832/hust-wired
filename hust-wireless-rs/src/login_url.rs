@@ -67,7 +67,7 @@ pub fn load_login_query(portal_base: &str) -> Result<String> {
         let value = raw.trim_start_matches('\u{feff}').trim();
         let query = parse_login_url(value, portal_base).map_err(|_| {
             AppError::LoginUrlRequired(
-                "未取得认证参数：本地登录地址无效；请选择菜单 9 更新登录地址".to_string(),
+                "未取得认证参数：本地登录地址无效；可用 set-url 更新".to_string(),
             )
         })?;
         if path != primary {
@@ -77,7 +77,7 @@ pub fn load_login_query(portal_base: &str) -> Result<String> {
     }
 
     Err(AppError::LoginUrlRequired(
-        "未取得认证参数；请打开菜单 9 粘贴自己的 index.jsp 登录页地址".to_string(),
+        "未取得认证参数；可用 set-url 保存自己的 index.jsp 登录页地址".to_string(),
     ))
 }
 

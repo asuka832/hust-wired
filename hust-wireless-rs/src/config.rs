@@ -81,7 +81,9 @@ pub fn load_credentials() -> Result<Credentials> {
     let raw = match fs::read(&path) {
         Ok(raw) => raw,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            return Err(AppError::msg("尚未设置账号，请先选择菜单 4 设置账号"));
+            return Err(AppError::msg(
+                "尚未设置账号，请从主菜单开始设置，或运行 setup",
+            ));
         }
         Err(error) => return Err(error.into()),
     };

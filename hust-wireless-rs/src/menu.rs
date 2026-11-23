@@ -13,17 +13,20 @@ pub const MENU_OPTIONS: &[(&str, &str, &str)] = &[
     ("9", "set-url", "更新登录地址"),
 ];
 
-pub fn menu_items() -> Vec<String> {
-    let mut items: Vec<String> = MENU_OPTIONS
-        .iter()
-        .map(|(number, _, label)| format!("[{number}] {label}"))
-        .collect();
-    items.push("[0] 退出".to_string());
-    items
+pub fn is_main_option(choice: &str) -> bool {
+    matches!(choice, "1" | "2" | "5")
 }
 
-pub fn menu_lines(width: usize) -> Vec<String> {
-    let items = menu_items();
+pub fn menu_lines(width: usize, more: bool) -> Vec<String> {
+    let mut items: Vec<String> = MENU_OPTIONS
+        .iter()
+        .filter(|(number, _, _)| is_main_option(number) != more)
+        .map(|(number, _, label)| format!("[{number}] {label}"))
+        .collect();
+    if !more {
+        items.push("[M] 更多设置".to_string());
+    }
+    items.push(if more { "[0] 返回" } else { "[0] 退出" }.to_string());
     let cell_width = items
         .iter()
         .map(|item| UnicodeWidthStr::width(item.as_str()))
@@ -65,14 +68,14 @@ mod tests {
 
     #[test]
     fn first_row_contains_three_options() {
-        let lines = menu_lines(120);
+        let lines = menu_lines(120, false);
         assert!(lines[0].contains("[1]"));
         assert!(lines[0].contains("[2]"));
-        assert!(lines[0].contains("[3]"));
+        assert!(lines[0].contains("[5]"));
     }
 
     #[test]
     fn narrow_terminal_uses_one_column() {
-        assert_eq!(menu_lines(20).len(), 10);
+        assert_eq!(menu_lines(20, true).len(), 7);
     }
 }

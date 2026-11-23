@@ -113,15 +113,20 @@ class AuthTests(unittest.TestCase):
 
     def test_no_command_opens_menu_and_zero_exits(self):
         output = io.StringIO()
-        with patch("builtins.input", return_value="0"), redirect_stdout(output), redirect_stderr(io.StringIO()):
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(hust_auth, "config_path", return_value=Path(folder) / "config.json"), \
+                patch("builtins.input", return_value="0"), redirect_stdout(output), redirect_stderr(io.StringIO()):
             try:
                 result = hust_auth.main([])
             except SystemExit as exc:
                 result = exc.code
         self.assertEqual(result, 0)
-        self.assertIn("立即登录", output.getvalue())
+        self.assertIn("设置账号并连接", output.getvalue())
+        self.assertNotIn("更多设置", output.getvalue())
+        self.assertNotIn("检查网络", output.getvalue())
 
-    def test_menu_checks_status_then_returns_to_choices(self):
+    @patch.object(Path, "exists", return_value=True)
+    def test_menu_checks_status_then_returns_to_choices(self, _):
         output = io.StringIO()
         with patch("builtins.input", side_effect=["2", "0"]), \
                 patch.object(hust_auth.Portal, "check_network", return_value=("online", "")) as check, \
@@ -133,16 +138,19 @@ class AuthTests(unittest.TestCase):
         self.assertIn("延迟 123 ms", output.getvalue())
         self.assertNotIn("耗时", output.getvalue())
 
-    def test_menu_displays_options_in_horizontal_rows(self):
+    @patch.object(Path, "exists", return_value=True)
+    def test_menu_displays_options_in_horizontal_rows(self, _):
         output = io.StringIO()
         with patch("builtins.input", return_value="0"), \
                 redirect_stdout(output):
             self.assertEqual(hust_auth.main([]), 0)
         first_row = next(line for line in output.getvalue().splitlines() if "[1]" in line)
         self.assertIn("[2]", first_row)
-        self.assertIn("[3]", first_row)
+        self.assertIn("[5]", first_row)
+        self.assertNotIn("参数诊断", output.getvalue())
 
-    def test_menu_login_runs_without_confirmation(self):
+    @patch.object(Path, "exists", return_value=True)
+    def test_menu_login_runs_without_confirmation(self, _):
         output = io.StringIO()
         with patch("builtins.input", side_effect=["1", "0"]), \
                 patch.object(hust_auth, "load_credentials", return_value=("student", "secret", "")), \
@@ -152,8 +160,9 @@ class AuthTests(unittest.TestCase):
         self.assertIn("已经联网，无需认证", output.getvalue())
         self.assertNotIn("(y/n)", output.getvalue())
 
-    def test_menu_disables_autostart_without_confirmation(self):
-        with patch("builtins.input", side_effect=["6", "0"]), \
+    @patch.object(Path, "exists", return_value=True)
+    def test_menu_disables_autostart_without_confirmation(self, _):
+        with patch("builtins.input", side_effect=["m", "6", "0", "0"]), \
                 patch.object(hust_auth, "uninstall_autostart") as uninstall, \
                 redirect_stdout(io.StringIO()):
             self.assertEqual(hust_auth.main([]), 0)
@@ -166,9 +175,10 @@ class AuthTests(unittest.TestCase):
         self.assertEqual(command[:3], [r"C:\Python\pythonw.exe", "-I", "-S"])
         self.assertEqual(command[-2:], [r"D:\Apps\hust_auth.py", "watch"])
 
-    def test_menu_cancel_does_not_remove_tool_data(self):
+    @patch.object(Path, "exists", return_value=True)
+    def test_menu_cancel_does_not_remove_tool_data(self, _):
         output = io.StringIO()
-        with patch("builtins.input", side_effect=["8", "n", "0"]), \
+        with patch("builtins.input", side_effect=["m", "8", "n", "0", "0"]), \
                 patch.object(hust_auth, "remove_tool_data") as remove, \
                 redirect_stdout(output):
             self.assertEqual(hust_auth.main([]), 0)
@@ -184,7 +194,7 @@ class AuthTests(unittest.TestCase):
             unrelated = config.parent / "keep.txt"
             for path in (config, log, saved_url, unrelated):
                 path.write_text("test", encoding="utf-8")
-            with patch("builtins.input", side_effect=["8", "y", "0"]), \
+            with patch("builtins.input", side_effect=["m", "8", "y", "0"]), \
                     patch.object(hust_auth, "config_path", return_value=config), \
                     patch.object(hust_auth, "login_url_path", return_value=saved_url), \
                     patch.object(hust_auth, "legacy_login_url_path", return_value=Path(folder) / "legacy.txt", create=True), \
@@ -209,11 +219,29 @@ class AuthTests(unittest.TestCase):
         install.assert_not_called()
         self.assertIn("HTTP", output.getvalue())
 
+    def test_first_run_saves_default_service_and_connects(self):
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as folder:
+            config = Path(folder) / "config.json"
+            with patch.object(hust_auth, "config_path", return_value=config), \
+                    patch.object(hust_auth, "save_credentials", side_effect=lambda *_: config.touch()) as save, \
+                    patch.object(hust_auth, "load_credentials", return_value=("student", "secret", "")), \
+                    patch.object(hust_auth.Portal, "check_network", return_value=("online", "")) as check, \
+                    patch.object(hust_auth, "install_autostart") as install, \
+                    patch("builtins.input", side_effect=["1", "student", "0"]), \
+                    patch("getpass.getpass", return_value="secret"), redirect_stdout(output):
+                self.assertEqual(hust_auth.main([]), 0)
+            save.assert_called_once_with("student", "secret", "")
+            check.assert_called_once_with()
+            install.assert_not_called()
+            self.assertLess(output.getvalue().index("已经联网"), output.getvalue().index("启用开机自启"))
+
     def test_menu_login_guides_url_paste_then_authenticates_once(self):
         url = hust_auth.PORTAL_URL + "index.jsp?wlanuserip=sample&nasip=sample&mac=sample"
         output = io.StringIO()
         with tempfile.TemporaryDirectory() as folder:
             config = Path(folder) / "config.json"
+            config.touch()
             with patch.object(hust_auth, "config_path", return_value=config), \
                     patch.object(hust_auth, "login_url_path", return_value=Path(folder) / "wired-login-url.txt"), \
                     patch.object(hust_auth, "legacy_login_url_path", return_value=Path(folder) / "legacy.txt", create=True), \
@@ -232,7 +260,9 @@ class AuthTests(unittest.TestCase):
     def test_cancelled_url_guidance_never_submits_login(self):
         output = io.StringIO()
         with tempfile.TemporaryDirectory() as folder:
-            with patch.object(hust_auth, "config_path", return_value=Path(folder) / "config.json"), \
+            config = Path(folder) / "config.json"
+            config.touch()
+            with patch.object(hust_auth, "config_path", return_value=config), \
                     patch.object(hust_auth, "login_url_path", return_value=Path(folder) / "wired-login-url.txt"), \
                     patch.object(hust_auth, "legacy_login_url_path", return_value=Path(folder) / "legacy.txt", create=True), \
                     patch("builtins.input", side_effect=["1", "", "0"]), \
@@ -246,11 +276,14 @@ class AuthTests(unittest.TestCase):
 
     def test_url_update_rejects_success_page_without_overwriting(self):
         with tempfile.TemporaryDirectory() as folder:
+            config = Path(folder) / "config.json"
+            config.touch()
             saved = Path(folder) / "wired-login-url.txt"
             saved.write_text("existing", encoding="utf-8")
             output = io.StringIO()
-            with patch.object(hust_auth, "login_url_path", return_value=saved), \
-                    patch("builtins.input", side_effect=["9", hust_auth.PORTAL_URL + "success.jsp?userIndex=example", "", "0"]), \
+            with patch.object(hust_auth, "config_path", return_value=config), \
+                    patch.object(hust_auth, "login_url_path", return_value=saved), \
+                    patch("builtins.input", side_effect=["m", "9", hust_auth.PORTAL_URL + "success.jsp?userIndex=example", "", "0", "0"]), \
                     redirect_stdout(output):
                 self.assertEqual(hust_auth.main([]), 0)
             self.assertEqual(saved.read_text(encoding="utf-8"), "existing")
