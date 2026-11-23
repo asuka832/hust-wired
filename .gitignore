@@ -22,10 +22,6 @@ hust-wireless-rs/target/
 Thumbs.db
 .DS_Store
 
-# Python
-__pycache__/
-*.pyc
-
 # Account data and saved portal pages. Never publish these.
 wired-login-url.txt
 reference/
