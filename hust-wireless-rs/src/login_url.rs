@@ -18,7 +18,7 @@ pub fn parse_login_url(value: &str, portal_base: &str) -> Result<String> {
         && page.port_or_known_default() == portal.port_or_known_default();
     if !same_origin || page.path() != expected_path {
         return Err(AppError::msg(
-            "保存的地址不是 index.jsp 登录页；请复制绿色登录按钮出现时的地址",
+            "这不是登录页的网址。请粘贴地址栏里还没登录成功时的整段网址",
         ));
     }
 
@@ -67,7 +67,7 @@ pub fn load_login_query(portal_base: &str) -> Result<String> {
         let value = raw.trim_start_matches('\u{feff}').trim();
         let query = parse_login_url(value, portal_base).map_err(|_| {
             AppError::LoginUrlRequired(
-                "未取得认证参数：本地登录地址无效；可用 set-url 更新".to_string(),
+                "保存的登录网址不能用了".to_string(),
             )
         })?;
         if path != primary {
@@ -77,7 +77,7 @@ pub fn load_login_query(portal_base: &str) -> Result<String> {
     }
 
     Err(AppError::LoginUrlRequired(
-        "未取得认证参数；可用 set-url 保存自己的 index.jsp 登录页地址".to_string(),
+        "还没有登录页网址".to_string(),
     ))
 }
 

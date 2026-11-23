@@ -36,7 +36,7 @@ Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka8
 
 1. On first launch, choose `1` and enter your campus account and password. The tool saves them, checks the network, and attempts to sign in if needed.
 2. Choose `5` from the main menu to start automatically at Windows sign-in. If your account needs an operator code, press `M` for more settings, then choose `4`.
-3. If the tool cannot fetch the portal parameters, it prompts for the full `index.jsp?` URL from the page with the green Login button. Press Enter to cancel. A bad URL does not replace a saved one.
+3. If the tool cannot get the login parameters, paste the entire address from the browser bar. Use the page before login succeeds. Press Enter to cancel. A bad URL does not replace a saved one.
 
 ## Menu
 
@@ -61,7 +61,7 @@ Get `hust-wireless-rs-windows-x64.zip` from [Releases](https://github.com/asuka8
 
 Choose `3` under more settings. A normal portal redirect carries fields such as `nasip` and `wlanuserip`. The diagnosis prints names, not values.
 
-If it used to work and then stopped, the address has usually changed. Choose `9` and paste the current `index.jsp?` URL. A captcha or an unregistered-device message has to be handled in the browser before another login. The watch stops after five failed sign-ins in a row.
+If it used to work and then stopped, the address has usually changed. Choose `9` and paste the entire address from the browser bar. A captcha or an unregistered-device message has to be handled in the browser before another login. The watch stops after five failed sign-ins in a row.
 
 ## Local data
 

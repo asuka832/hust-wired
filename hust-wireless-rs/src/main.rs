@@ -77,7 +77,7 @@ fn print_help() {
     println!("  install     启用开机自启");
     println!("  uninstall   取消开机自启");
     println!("  remove      清除账号、日志和自启项");
-    println!("  set-url     保存自己的 index.jsp 登录地址");
+    println!("  set-url     保存登录页的整段网址");
     println!();
     println!("不指定命令时进入交互菜单。");
 }
@@ -260,10 +260,8 @@ fn login_with_guidance(portal: &Portal, credentials: &config::Credentials) -> Re
 }
 
 fn prompt_login_url(portal_base: &str) -> Result<bool> {
-    println!("请在待认证状态打开你平时使用的校园网认证网页，停在绿色“连接 Login”按钮出现的页面。");
-    println!(
-        "复制浏览器地址栏中的完整 index.jsp? 网址，粘贴到下面；不要复制登录成功页，也不要发送到聊天或 Issue。"
-    );
+    println!("把浏览器地址栏里的整段网址粘贴到下面。");
+    println!("要还没登录成功的那一页。登录成功后的网址不能用，也不要发到聊天或 Issue。");
     loop {
         let url = read_line("登录页网址（直接回车取消）：")?;
         let url = url.trim();
