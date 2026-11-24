@@ -56,6 +56,9 @@ fn run(args: &[String]) -> Result<()> {
     match args {
         [] => run_menu(),
         [command] if COMMANDS.contains(&command.as_str()) => run_command(command, None),
+        [command, flag] if command == "watch" && matches!(flag.as_str(), "--quiet" | "-q") => {
+            run_command("watch", Some(false))
+        }
         [command, ..] => Err(AppError::msg(format!(
             "无效命令：{command}\n可用命令：{}",
             COMMANDS.join(", ")

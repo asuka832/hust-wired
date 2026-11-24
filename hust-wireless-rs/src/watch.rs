@@ -10,6 +10,7 @@ use crate::error::{AppError, Result};
 use crate::portal::{self, Portal};
 
 static STOP: AtomicBool = AtomicBool::new(false);
+static QUIET: AtomicBool = AtomicBool::new(false);
 
 pub fn stop_requested() -> bool {
     STOP.load(Ordering::SeqCst)
@@ -27,6 +28,9 @@ pub fn clear_stop() {
 
 /// Returns true when the user pressed Q or q.
 pub fn quit_pressed() -> bool {
+    if QUIET.load(Ordering::SeqCst) {
+        return false;
+    }
     match read_key() {
         Some(ch) if ch == b'q' as u16 || ch == b'Q' as u16 => {
             request_stop();
@@ -132,6 +136,7 @@ pub fn watch(portal: &Portal, credentials: &Credentials, quiet: bool) -> Result<
     }
 
     clear_stop();
+    QUIET.store(quiet, Ordering::SeqCst);
     if !quiet {
         say("持续监测已开始，按 Q 返回菜单。");
     }

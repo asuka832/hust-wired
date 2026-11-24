@@ -11,7 +11,10 @@ const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 
 pub fn autostart_command() -> Result<String> {
     let exe = std::env::current_exe()?;
-    Ok(format!("\"{}\" watch", exe.display()))
+    Ok(format!(
+        "conhost.exe --headless \"{}\" watch --quiet",
+        exe.display()
+    ))
 }
 
 #[cfg(windows)]
@@ -53,4 +56,16 @@ pub fn uninstall() -> Result<()> {
 #[cfg(not(windows))]
 pub fn uninstall() -> Result<()> {
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn autostart_command_runs_headless_and_quiet() {
+        let command = autostart_command().unwrap();
+        assert!(command.starts_with("conhost.exe --headless \""));
+        assert!(command.ends_with("\" watch --quiet"));
+    }
 }
