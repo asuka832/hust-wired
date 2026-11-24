@@ -1,6 +1,6 @@
 [package]
 name = "hust-wireless-rs"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "HUST campus wired network authentication CLI, rewritten in Rust"
 license = "MIT"
