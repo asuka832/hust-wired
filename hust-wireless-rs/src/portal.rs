@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use reqwest::StatusCode;
 use reqwest::blocking::Client;
-use reqwest::header::{CONTENT_TYPE, LOCATION, USER_AGENT};
+use reqwest::header::{CONTENT_TYPE, LOCATION};
 use reqwest::redirect::Policy;
 use serde_json::Value;
 use url::Url;
@@ -19,6 +19,7 @@ use crate::rsa;
 pub const PORTAL_URL: &str = "http://172.18.18.61:8080/eportal/";
 pub const NETWORK_CHECK_TIMEOUT: Duration = Duration::from_secs(3);
 pub const PROBE_TIMEOUT: Duration = Duration::from_secs(2);
+const PORTAL_USER_AGENT: &str = "HUST-Wired-Auth/1.0";
 
 const DEFAULT_PROBES: &[&str] = &[
     "http://connect.rom.miui.com/generate_204",
@@ -84,6 +85,7 @@ impl Portal {
         }
         let base_url = format!("{}/", base_url.trim_end_matches('/'));
         let client = Client::builder()
+            .user_agent(PORTAL_USER_AGENT)
             .redirect(Policy::none())
             .timeout(PROBE_TIMEOUT)
             .no_proxy()
@@ -279,11 +281,7 @@ fn probe_url(
     portal_page: bool,
 ) -> Option<ProbeResult> {
     let portal = Url::parse(base_url).ok()?;
-    let response = client
-        .get(url)
-        .header(USER_AGENT, "HUST-Wired-Auth/1.0")
-        .send()
-        .ok()?;
+    let response = client.get(url).send().ok()?;
     let status = response.status();
 
     if expected.is_some_and(|code| status.as_u16() == code) {
@@ -526,9 +524,16 @@ mod tests {
             match read_request(&mut stream) {
                 ReadOutcome::Request(headers, body) => {
                     let path = headers.lines().next().unwrap_or_default().to_string();
+                    let has_user_agent = headers.lines().any(|line| {
+                        line.split_once(':').is_some_and(|(key, value)| {
+                            key.eq_ignore_ascii_case("user-agent") && !value.trim().is_empty()
+                        })
+                    });
                     let is_page_info = path.contains("method=pageInfo");
                     requests.lock().unwrap().push((path, body));
-                    let json = if is_page_info {
+                    let json = if !has_user_agent {
+                        String::new()
+                    } else if is_page_info {
                         format!(
                             r#"{{"passwordEncrypt":"true","publicKeyExponent":"01","publicKeyModulus":"{}","validCodeUrl":"","prefixName":"false"}}"#,
                             "F".repeat(32)
